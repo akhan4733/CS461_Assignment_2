@@ -85,7 +85,7 @@ public class GeneticInformation {
     public String getFormatString() {
         return activity.name() + " = {" + "\n" +
                 "\t\t" + "Room = " + room.name() + "\n" +
-                "\t\t" + "Time = " + time.toPrettyString() + "\n" +
+                "\t\t" + "Time = " + time.niceFormat() + "\n" +
                 "\t\t" + "Facilitator = " + facilitator + "\n" +
                 "\t}";
     }

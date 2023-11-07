@@ -21,7 +21,7 @@ public record Time(int hourValue, TImeType TImeType) {
 
         return Math.abs(convertedHourValue1 - convertedHourValue2);
     }
-    public String toPrettyString() {
+    public String niceFormat() {
         return hourValue + TImeType.name();
     }
 }

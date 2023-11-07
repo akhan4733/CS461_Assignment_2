@@ -25,6 +25,6 @@ public class Driver {
         } while (population.getAverageFitness() > 1.01 * previousAverageFitnessScore);
 
 
-        Files.writeString(Paths.get("output.txt"), population.getBestIndividual().toPrettyString());
+        Files.writeString(Paths.get("output.txt"), population.getBestIndividual().niceFormat());
     }
 }

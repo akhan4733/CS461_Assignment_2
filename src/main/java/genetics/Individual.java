@@ -21,13 +21,13 @@ public final class Individual implements ProbableSelection {
 
     public void attemptMutation(double mutationRate) {
         for (GeneticInformation geneticInformation : geneticInformationList) {
-            if (GeneticUtils.mutationOccurred(mutationRate)) {
+            if (GeneticUtils.changesOccurred(mutationRate)) {
                 geneticInformation.mutateFacilitator();
             }
-            if (GeneticUtils.mutationOccurred(mutationRate)) {
+            if (GeneticUtils.changesOccurred(mutationRate)) {
                 geneticInformation.mutateRoom();
             }
-            if (GeneticUtils.mutationOccurred(mutationRate)) {
+            if (GeneticUtils.changesOccurred(mutationRate)) {
                 geneticInformation.mutateTime();
             }
         }
@@ -36,10 +36,10 @@ public final class Individual implements ProbableSelection {
     public List<Individual> crossoverWith(Individual other) {
         int indexOfDividingLine = random.nextInt(1, GeneticConstants.GENE_COUNT - 1);
 
-        List<GeneticInformation> firstHalf1 = this.splitGenes(0, indexOfDividingLine);
-        List<GeneticInformation> secondHalf1 = other.splitGenes(indexOfDividingLine, GeneticConstants.GENE_COUNT);
-        List<GeneticInformation> firstHalf2 = other.splitGenes(0, indexOfDividingLine);
-        List<GeneticInformation> secondHalf2 = this.splitGenes(indexOfDividingLine, GeneticConstants.GENE_COUNT);
+        List<GeneticInformation> firstHalf1 = this.splitGeneticInformation(0, indexOfDividingLine);
+        List<GeneticInformation> secondHalf1 = other.splitGeneticInformation(indexOfDividingLine, GeneticConstants.GENE_COUNT);
+        List<GeneticInformation> firstHalf2 = other.splitGeneticInformation(0, indexOfDividingLine);
+        List<GeneticInformation> secondHalf2 = this.splitGeneticInformation(indexOfDividingLine, GeneticConstants.GENE_COUNT);
 
         Individual individual1 =
                 new Individual(Stream.concat(firstHalf1.stream(), secondHalf1.stream()).toList());
@@ -48,7 +48,7 @@ public final class Individual implements ProbableSelection {
 
         return List.of(individual1, individual2);
     }
-    public String toPrettyString() {
+    public String niceFormat() {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder
                 .append("Schedule = {")
@@ -62,7 +62,7 @@ public final class Individual implements ProbableSelection {
         return stringBuilder.toString();
     }
 
-    private List<GeneticInformation> splitGenes(int start, int end) {
+    private List<GeneticInformation> splitGeneticInformation(int start, int end) {
         return geneticInformationList.subList(start, end)
                 .stream()
                 .map(GeneticInformation::copyGene)
@@ -76,15 +76,10 @@ public final class Individual implements ProbableSelection {
     public void calculateFitness() {
         double fitnessScore = geneticInformationList
                 .stream()
-                .mapToDouble(geneticInformation -> GeneticUtils.calculateFitnessOfGene(geneticInformation, this))
+                .mapToDouble(geneticInformation -> GeneticUtils.calculateFitness(geneticInformation, this))
                 .sum();
 
-        /*
-        The 2 sections of SLA 101 are more than 4 hours apart: + 0.5
-        Both sections of SLA 101 are in the same time slot: -0.5
-        The 2 sections of SLA 191 are more than 4 hours apart: + 0.5
-        Both sections of SLA 191 are in the same time slot: -0.5
-         */
+
 
         //The 2 sections of SLA 101 are more than 4 hours apart: + 0.5
         final GeneticInformation SLA101A = GeneticUtils.getGeneByName("SLA101A", this);
@@ -110,33 +105,28 @@ public final class Individual implements ProbableSelection {
             fitnessScore -= 0.5;
         }
 
-        /*
-        A section of SLA 191 and a section of SLA 101 are overseen in consecutive time slots (e.g., 10 AM & 11 AM): +0.5
-        In this case only (consecutive time slots), one of the activities is in Roman or Beach, and the other isn’t: -0.4
-        It’s fine if neither is in one of those buildings, of activity; we just want to avoid having consecutive activities being widely separated.
-         */
         //4 possible combos: SLA101A with SLA191A, SLA101B with SLA191A, SLA101A with SLA191B, SLA101B with SLA191B
         final Room roman201 = ScheduleUtils.getRoomByName("Roman 201");
         final Room beach201 = ScheduleUtils.getRoomByName("Beach 201");
 
         if (SLA101A.getTime().differenceBetween(SLA191A.getTime()) == 1) {
             fitnessScore += 0.5;
-            if (GeneticUtils.isRoomAvoidanceMet(SLA101A, SLA191A, roman201, beach201)) {
+            if (GeneticUtils.roomRequirementsMet(SLA101A, SLA191A, roman201, beach201)) {
                 fitnessScore -= 0.4;
             }
         } else if (SLA101B.getTime().differenceBetween(SLA191A.getTime()) == 1) {
             fitnessScore += 0.5;
-            if (GeneticUtils.isRoomAvoidanceMet(SLA101B, SLA191A, roman201, beach201)) {
+            if (GeneticUtils.roomRequirementsMet(SLA101B, SLA191A, roman201, beach201)) {
                 fitnessScore -= 0.4;
             }
         } else if (SLA101A.getTime().differenceBetween(SLA191B.getTime()) == 1) {
             fitnessScore += 0.5;
-            if (GeneticUtils.isRoomAvoidanceMet(SLA101A, SLA191B, roman201, beach201)) {
+            if (GeneticUtils.roomRequirementsMet(SLA101A, SLA191B, roman201, beach201)) {
                 fitnessScore -= 0.4;
             }
         } else if (SLA101B.getTime().differenceBetween(SLA191B.getTime()) == 1) {
             fitnessScore += 0.5;
-            if (GeneticUtils.isRoomAvoidanceMet(SLA101B, SLA191B, roman201, beach201)) {
+            if (GeneticUtils.roomRequirementsMet(SLA101B, SLA191B, roman201, beach201)) {
                 fitnessScore -= 0.4;
             }
         }
@@ -164,7 +154,6 @@ public final class Individual implements ProbableSelection {
             fitnessScore -= 0.25;
         }
 
-        //If any facilitator scheduled for consecutive time slots: Same rules as for SLA 191 and SLA 101 in consecutive time slots—see below.
         Map<String, List<GeneticInformation>> facilitatorToActivityMap = new HashMap<>();
         for (GeneticInformation geneticInformation : geneticInformationList) {
             if (!facilitatorToActivityMap.containsKey(geneticInformation.getFacilitator())) {
@@ -180,14 +169,14 @@ public final class Individual implements ProbableSelection {
         for (var entry : facilitatorToActivityMap.entrySet()) {
             for (int i = 0; i < entry.getValue().size(); i++) {
                 if (GeneticUtils.areAnyTimesConsecutive(entry.getValue())) {
-                    consecutiveGeneticInformations = GeneticUtils.getConsecutiveTimes(entry.getValue());
+                    consecutiveGeneticInformations = GeneticUtils.getConsistantTimes(entry.getValue());
                 }
             }
         }
 
         if (!consecutiveGeneticInformations.isEmpty()) {
             fitnessScore += 0.5;
-            if (GeneticUtils.isRoomAvoidanceMet(
+            if (GeneticUtils.roomRequirementsMet(
                     consecutiveGeneticInformations.get(0),
                     consecutiveGeneticInformations.get(1),
                     roman201,
