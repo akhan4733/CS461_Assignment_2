@@ -54,7 +54,7 @@ public final class Individual implements ProbableSelection {
                 .append("Schedule = {")
                 .append("\n");
         for (GeneticInformation geneticInformation : geneticInformationList) {
-            stringBuilder.append("\t").append(geneticInformation.toPrettyString()).append("\n");
+            stringBuilder.append("\t").append(geneticInformation.getFormatString()).append("\n");
         }
 
         stringBuilder.append("}");

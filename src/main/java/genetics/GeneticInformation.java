@@ -82,7 +82,7 @@ public class GeneticInformation {
                 ", facilitator='" + facilitator + '\'' +
                 '}';
     }
-    public String toPrettyString() {
+    public String getFormatString() {
         return activity.name() + " = {" + "\n" +
                 "\t\t" + "Room = " + room.name() + "\n" +
                 "\t\t" + "Time = " + time.toPrettyString() + "\n" +
